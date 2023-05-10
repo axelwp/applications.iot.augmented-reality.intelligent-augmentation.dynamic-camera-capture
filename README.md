@@ -1,0 +1,1 @@
+# applications.iot.augmented-reality.intelligent-augmentation.dynamic-camera-capture
