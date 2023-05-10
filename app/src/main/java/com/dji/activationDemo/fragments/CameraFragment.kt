@@ -82,8 +82,6 @@ import kotlin.math.min
 
 
 /** Helper type alias used for analysis use case callbacks */
-typealias LumaListener = (luma: Double) -> Unit
-
 typealias OBJListener = (obj: ArrayList<Result>) -> Unit
 
 /**
@@ -123,9 +121,6 @@ class CameraFragment : Fragment() {
     private var meterAction: FocusMeteringAction? = null
     private lateinit var windowManager: WindowManager
     private lateinit var cropLocation: Rect
-
-
-    //val handler: Handler = Handler()
 
     private val displayManager by lazy {
         requireContext().getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
@@ -241,8 +236,6 @@ class CameraFragment : Fragment() {
         // Determine the output directory
         outputDirectory = MainActivity.getOutputDirectory(requireContext())
 
-        //maybe load model and classes here?
-
         // Wait for the views to be properly laid out
         fragmentCameraBinding.viewFinder.post {
 
@@ -327,23 +320,12 @@ class CameraFragment : Fragment() {
                 .setTargetRotation(rotation)
                 .build()
 
-        //get views
+        //get resultview for drawing bounding box
         val mResultView: ResultView? = view?.findViewById(R.id.resultView)
-        //val textureView: TextureView? = (view?.findViewById(R.id.object_detection_view_stub) as ViewStub).inflate()
-         //       .findViewById(R.id.object_detection_texture_view)
+
         val rect = windowManager.getCurrentWindowMetrics().bounds
         val factory = fragmentCameraBinding.viewFinder.meteringPointFactory
         var meteringPoint: MeteringPoint = factory.createPoint(rect.exactCenterX(), rect.exactCenterY());
-
-        //  This line sets a callback function to be called when the preview output is updated.
-        // The callback function takes a SurfaceProvider object as input and updates the SurfaceTexture
-        // of the TextureView with the new preview frame.
-        // The output -> textureView.setSurfaceTexture(output.getSurfaceTexture()) lambda function is
-        // passed as a parameter to the setOnPreviewOutputUpdateListener() method to set this callback.
-        // This allows the preview frames to be displayed on the TextureView.
-        //preview.setOnPreviewOutputUpdateListener { output -> textureView!!.setSurfaceTexture(output.getSurfaceTexture()) }
-
-
 
         // ImageCapture
         imageCapture = ImageCapture.Builder()
@@ -368,16 +350,14 @@ class CameraFragment : Fragment() {
                 .build()
                 // The analyzer can then be assigned to the instance
                 .also {
-                    it.setAnalyzer(cameraExecutor, LuminosityAnalyzer( { obj ->
+                    it.setAnalyzer(cameraExecutor, ImageAnalyzer( { obj ->
                         Log.d(TAG, "obj: ${obj.size}")
-
 
                         //prevent analysis from happening more than once in 500 time units
                         if (SystemClock.elapsedRealtime() - mLastAnalysisResultTime < 500) {
-                            return@LuminosityAnalyzer
+                            return@ImageAnalyzer
                         }
 
-                        //need to check when the last result was changed?
                         //set results in resultview
                         if (mResultView != null) {
                             //set counter for last analysis
@@ -391,9 +371,6 @@ class CameraFragment : Fragment() {
                         }
 
                         // Values returned from our analyzer are passed to the attached listener
-                        // We log image analysis results here - you should do something useful
-                        // instead!)
-                        //Log.d(TAG, "Average luminosity: $luma")
                         if(mResultView?.highestConfidence != null){
                             Log.d(TAG, "highest confidence: ${mResultView.highestConfidence.rect.exactCenterX()}")
                             cropLocation = mResultView.highestConfidence.rect
@@ -427,42 +404,6 @@ class CameraFragment : Fragment() {
 
     private fun observeCameraState(cameraInfo: CameraInfo) {
         cameraInfo.cameraState.observe(viewLifecycleOwner) { cameraState ->
-            /*
-            run {
-                when (cameraState.type) {
-                    CameraState.Type.PENDING_OPEN -> {
-                        // Ask the user to close other camera apps
-                        Toast.makeText(context,
-                                "CameraState: Pending Open",
-                                Toast.LENGTH_SHORT).show()
-                    }
-                    CameraState.Type.OPENING -> {
-                        // Show the Camera UI
-                        Toast.makeText(context,
-                                "CameraState: Opening",
-                                Toast.LENGTH_SHORT).show()
-                    }
-                    CameraState.Type.OPEN -> {
-                        // Setup Camera resources and begin processing
-                        Toast.makeText(context,
-                                "CameraState: Open",
-                                Toast.LENGTH_SHORT).show()
-                    }
-                    CameraState.Type.CLOSING -> {
-                        // Close camera UI
-                        Toast.makeText(context,
-                                "CameraState: Closing",
-                                Toast.LENGTH_SHORT).show()
-                    }
-                    CameraState.Type.CLOSED -> {
-                        // Free camera resources
-                        Toast.makeText(context,
-                                "CameraState: Closed",
-                                Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
-            */
 
             cameraState.error?.let { error ->
                 when (error.code) {
@@ -570,24 +511,8 @@ class CameraFragment : Fragment() {
         }
 
 
-        // Setup for button used to switch cameras
+        // Setup for button used to switch cameras UNUSED
         cameraUiContainerBinding?.cameraSwitchButton?.let {
-            // Disable the button until the camera is set up
-            //it.isEnabled = false
-            /*
-            // Listener for button used to switch cameras. Only called if the button is enabled
-            it.setOnClickListener {
-
-                lensFacing = if (CameraSelector.LENS_FACING_FRONT == lensFacing) {
-                    CameraSelector.LENS_FACING_BACK
-                } else {
-                    CameraSelector.LENS_FACING_FRONT
-                }
-                // Re-bind use cases to update selected camera
-                bindCameraUseCases()
-            }
-            */
-
         }
 
         // Listener for button used to view the most recent photo
@@ -601,69 +526,7 @@ class CameraFragment : Fragment() {
             }
         }
     }
-    /*
-    //if this doesnt work, try the logic shown on this example https://www.codeproject.com/Articles/1276135/Crop-Image-from-Camera-on-Android
-    private fun cropPhoto(
-        photoUri: Uri,
-        cropRect: Rect,
-        callback: (Uri?) -> Unit
-    ) {
-        val intent = Intent("com.android.camera.action.CROP")
-
-        intent.data = photoUri // location of the image
-        intent.putExtra("crop", "true") // Enable cropping
-        intent.putExtra("scale", true) // Enable scaling of the cropped image
-        intent.putExtra("aspectX", cropRect.width()) // Set the width of the crop rectangle
-        intent.putExtra("aspectY", cropRect.height()) // Set the height of the crop rectangle
-        intent.putExtra("outputX", cropRect.width()) // Set the desired output width of the cropped image
-        intent.putExtra("outputY", cropRect.height()) // Set the desired output height of the cropped image
-
-        // Create the activity result launcher for the crop intent
-        val cropActivityResultLauncher = registerForActivityResult(
-            ActivityResultContracts.StartActivityForResult()
-        ) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                // Handle the cropped image result
-                val data = result.data
-                if (data != null && data.hasExtra("data")) {
-                    val croppedImage = data.getParcelableExtra<Bitmap>("data")
-
-                    // Now we write the bitmap to a file
-                    val croppedFile = File(context!!.cacheDir, "cropped_image.jpg")
-                    val outputStream = FileOutputStream(croppedFile)
-                    croppedImage!!.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
-                    outputStream.flush()
-                    outputStream.close()
-
-                    //get the URI of the cropped image
-                    val croppedImageUri = FileProvider.getUriForFile(
-                        context!!,
-                        "${context!!.packageName}.fileprovider",
-                        croppedFile
-                    )
-
-                    // Return the URI of the cropped image through the callback
-                    callback(croppedImageUri)
-                } else {
-                    // Return null if the cropped image data is not available
-                    callback(null)
-                }
-            } else {
-                // Return null if the cropping activity did not complete successfully
-                callback(null)
-            }
-        }
-
-        // Start the cropping activity
-        intent.putExtra("return-data", true)
-        val extras = Bundle()
-        extras.putParcelable("rect", cropRect)
-        intent.putExtras(extras)
-        cropActivityResultLauncher.launch(intent)
-    }
-*/
-
-
+    
     fun takePhotos() {
         //Commented this out because we want to focus the camera on the center of the bounding box, should be updated at the same time
         // Focus camera before taking the shot
@@ -706,23 +569,6 @@ class CameraFragment : Fragment() {
                     override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                         var savedUri = output.savedUri ?: Uri.fromFile(photoFile)
                         Log.d(TAG, "Photo capture succeeded: $savedUri")
-
-                        if(mResultView?.highestConfidence != null){
-                            // Perform image cropping here
-                            /*
-                            cropPhoto(savedUri, crop) { croppedImageUri ->
-                                // Handle the cropped image URI
-                                if (croppedImageUri != null) {
-                                    // Use the cropped image URI
-                                    savedUri = croppedImageUri
-                                    Log.d(TAG, "Image crop succeeded: $savedUri")
-                                } else {
-                                    // Show an error message or handle the case where the cropping did not complete successfully
-                                    Log.e(TAG, "Image crop failed")
-                                }
-                            }*/
-                        }
-                        //Log.d(TAG, "No box found, image will not be cropped")
 
 
                         if (Animation.Step()) {
@@ -798,8 +644,11 @@ class CameraFragment : Fragment() {
      * we compute the average luminosity of the image by looking at the Y plane of the YUV frame.
      */
     //changed class type from private to inner so that it can access the members above
+    
+    // Define a private class ImageAnalyzer that implements the ImageAnalysis.Analyzer interface
     @SuppressLint("RestrictedApi")
-    private inner class LuminosityAnalyzer(listener: OBJListener? = null, context: Context) : ImageAnalysis.Analyzer {
+    private inner class ImageAnalyzer(listener: OBJListener? = null, context: Context) : ImageAnalysis.Analyzer {
+        //Declare variables to store the TorchScript module and some image processing data
         private var mModule: Module? = null
         private val frameRateWindow = 8
         private val frameTimestamps = ArrayDeque<Long>(5)
@@ -808,10 +657,12 @@ class CameraFragment : Fragment() {
         var framesPerSecond: Double = -1.0
             private set
 
+        // Initialize the class by loading the TorchScript module and the list of classes from the assets folder
         init {
             try {
-                //mResultView = ResultView(context)
+                // Load the TorchScript module from the assets folder (weld model)
                 mModule = LiteModuleLoader.load(assetFilePath(getApplicationContext(context), "best.torchscript.ptl"))
+                // Load the list of classes from the classes.txt file in the assets folder
                 val br = BufferedReader(InputStreamReader(context.getAssets().open("classes.txt")))
                 val iterator = br.lineSequence().iterator()
                 val classes: MutableList<String> = ArrayList()
@@ -819,8 +670,10 @@ class CameraFragment : Fragment() {
                     val line = iterator.next()
                     classes.add(line)
                 }
+                // Set the list of classes in the PrePostProcessor class
                 PrePostProcessor.mClasses = classes.toTypedArray()
             } catch (e: IOException) {
+                // Print an error message if there is an issue loading the assets
                 Log.e("Object Detection", "Error reading assets", e)
             }
         }
@@ -840,24 +693,37 @@ class CameraFragment : Fragment() {
             return data // Return the byte array
         }
 
-        private fun imgToBitmap(image: Image): Bitmap? {
-            val planes = image.planes
-            val yBuffer = planes[0].buffer
-            val uBuffer = planes[1].buffer
-            val vBuffer = planes[2].buffer
-            val ySize = yBuffer.remaining()
-            val uSize = uBuffer.remaining()
-            val vSize = vBuffer.remaining()
-            val nv21 = ByteArray(ySize + uSize + vSize)
-            yBuffer[nv21, 0, ySize]
-            vBuffer[nv21, ySize, vSize]
-            uBuffer[nv21, ySize + vSize, uSize]
-            val yuvImage = YuvImage(nv21, ImageFormat.NV21, image.width, image.height, null)
-            val out = ByteArrayOutputStream()
-            yuvImage.compressToJpeg(Rect(0, 0, yuvImage.width, yuvImage.height), 75, out)
-            val imageBytes = out.toByteArray()
-            return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
-        }
+/**
+ * Converts an Android Image object to a Bitmap object.
+ * @param image The Image object to convert.
+ * @return A Bitmap object, or null if the conversion failed.
+ */
+private fun imgToBitmap(image: Image): Bitmap? {
+    // Get the planes of the image.
+    val planes = image.planes
+    // Get the buffers for the Y, U, and V planes.
+    val yBuffer = planes[0].buffer
+    val uBuffer = planes[1].buffer
+    val vBuffer = planes[2].buffer
+    // Get the sizes of each plane.
+    val ySize = yBuffer.remaining()
+    val uSize = uBuffer.remaining()
+    val vSize = vBuffer.remaining()
+    // Combine the Y, U, and V planes into a single NV21 byte array.
+    val nv21 = ByteArray(ySize + uSize + vSize)
+    yBuffer[nv21, 0, ySize]
+    vBuffer[nv21, ySize, vSize]
+    uBuffer[nv21, ySize + vSize, uSize]
+    // Create a YuvImage object from the NV21 byte array.
+    val yuvImage = YuvImage(nv21, ImageFormat.NV21, image.width, image.height, null)
+    // Compress the YuvImage object to a JPEG byte array.
+    val out = ByteArrayOutputStream()
+    yuvImage.compressToJpeg(Rect(0, 0, yuvImage.width, yuvImage.height), 75, out)
+    // Convert the JPEG byte array to a Bitmap object.
+    val imageBytes = out.toByteArray()
+    return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+}
+
 
         /**
          * Analyzes an image to produce a result.
@@ -882,22 +748,6 @@ class CameraFragment : Fragment() {
                 return
             }
 
-//            // Keep track of frames analyzed
-//            val currentTime = System.currentTimeMillis()
-//            frameTimestamps.push(currentTime)
-//
-//            // Compute the FPS using a moving average
-//            while (frameTimestamps.size >= frameRateWindow) frameTimestamps.removeLast()
-//            val timestampFirst = frameTimestamps.peekFirst() ?: currentTime
-//            val timestampLast = frameTimestamps.peekLast() ?: currentTime
-//            framesPerSecond = 1.0 / ((timestampFirst - timestampLast) /
-//                    frameTimestamps.size.coerceAtLeast(1).toDouble()) * 1000.0
-//
-//            // Analysis could take an arbitrarily long amount of time
-//            // Since we are running in a different thread, it won't stall other use cases
-//
-//            lastAnalyzedTimestamp = frameTimestamps.first
-
             var results = ArrayList<Result>()
 
             runBlocking {
@@ -906,7 +756,6 @@ class CameraFragment : Fragment() {
                     var bitmap = imgToBitmap(image.image!!)
                     //CREATE MATRIX OBJECT AND ROTATE BITMAP BY 90 DEGREES
                     val matrix = Matrix()
-                    //matrix.postRotate(90.0f)
                     //CREATE A NEW BITMAP WITH SAME ASPECT RATIO AS ORIGINAL BITMAP, BUT WITH SMALLER SIZE
                     bitmap = Bitmap.createBitmap(bitmap!!, 0, 0, bitmap!!.width, bitmap!!.height, matrix, true)
                     val resizedBitmap = Bitmap.createScaledBitmap(bitmap, PrePostProcessor.mInputWidth, PrePostProcessor.mInputHeight, true)
@@ -933,31 +782,10 @@ class CameraFragment : Fragment() {
                     val startX = 0.toFloat()
                     val startY = 0.toFloat()
 
-                    //Log.d(TAG, "imgscalex: ${imgScaleX}")
-                    //Log.d(TAG, "imgscaley: ${imgScaleY}")
-                    //Log.d(TAG, "ivscalex: ${ivScaleX}")
-                    //Log.d(TAG, "ivscaley: ${ivScaleY}")
-                    //Log.d(TAG, "startx: ${startX}")
-                    //Log.d(TAG, "starty: ${startY}")
-
-
-
                     //TAKE OUTPUTS AND PROCESS IT INTO PREDICTIONS
                     results = PrePostProcessor.outputsToNMSPredictions(outputs, imgScaleX, imgScaleY, ivScaleX, ivScaleY, startX, startY)
                 }
             }
-//            // Since format in ImageAnalysis is YUV, image.planes[0] contains the luminance plane
-//            val buffer = image.planes[0].buffer
-//
-//            // Extract image data from callback object
-//            val data = buffer.toByteArray()
-//
-//            // Convert the data into an array of pixel values ranging 0-255
-//            val pixels = data.map { it.toInt() and 0xFF }
-//
-//            // Compute average luminance for the image
-//            val luma = pixels.average()
-
             // Call all listeners with new value
              listeners.forEach { it(results) }
 
