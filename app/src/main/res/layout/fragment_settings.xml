@@ -1,0 +1,350 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:fillViewport="true"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/intelishBlue"
+    android:orientation="vertical">
+    <ImageButton
+        android:id="@+id/btn_back"
+        android:contentDescription="@string/back_button_alt"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        android:layout_marginStart="@dimen/margin_xsmall"
+        android:layout_marginTop="@dimen/margin_small"
+        android:layout_width="@dimen/round_button_small"
+        android:layout_height="@dimen/round_button_small"
+        android:scaleType="fitCenter"
+        android:background="@android:color/transparent"
+        app:srcCompat="@drawable/ic_back" />
+
+    <ImageButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:background="@drawable/ic_baseline_settings_applications_24"
+
+        android:layout_marginTop="60dp">
+
+
+    </ImageButton>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="3D Auto Scanner v01.23.2"
+        android:textSize="@dimen/settings_text_size"
+        android:textColor="@color/colorWhite"
+        android:textStyle="normal"
+
+        android:layout_gravity="center"
+        />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="© 2022 Intel® Corporation"
+        android:textSize="@dimen/settings_text_size"
+        android:textColor="@color/colorWhite"
+        android:textStyle="normal"
+        android:layout_gravity="center" />
+    <GridLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:rowCount="1"
+        android:columnCount="2"
+        android:layout_marginTop="10dp"
+        android:layout_gravity="center">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Images per scan"
+            android:textSize="@dimen/settings_text_size"
+            android:textColor="@color/colorWhite"
+            android:textStyle="normal"
+            android:id="@+id/images_per_scan"
+            android:layout_gravity="center"/>
+        <EditText
+            android:id="@+id/images_per_scan_setting"
+            android:layout_width="@dimen/settings_input_width"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:padding="@dimen/settings_padding"
+            android:layout_margin="10dp"
+            android:textAlignment="center"
+            android:textColor="@color/colorBlack"
+            android:textColorHint="@color/colorBlack"
+            android:imeOptions="actionDone"
+            android:background="#b3c6e7" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Shots per sec.    "
+            android:textSize="@dimen/settings_text_size"
+            android:textColor="@color/colorWhite"
+            android:textStyle="normal"
+            android:id="@+id/shots_per_sec"/>
+        <EditText
+            android:id="@+id/shots_per_sec_setting"
+            android:layout_width="@dimen/settings_input_width"
+            android:layout_height="wrap_content"
+            android:inputType="numberDecimal"
+            android:padding="@dimen/settings_padding"
+            android:layout_margin="10dp"
+            android:textAlignment="center"
+            android:textColor="@color/colorBlack"
+            android:textColorHint="@color/colorBlack"
+            android:imeOptions="actionDone"
+            android:background="#b3c6e7" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Resoultion"
+            android:textSize="@dimen/settings_text_size"
+            android:textColor="@color/colorWhite"
+            android:textStyle="normal"
+            android:id="@+id/resolution"/>
+
+        <RadioGroup
+            android:id="@+id/radio_group"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checkedButton="@id/radio_1k"
+            android:onClick="onRadioButtonClicked"
+            android:orientation="horizontal"
+            android:textColor="@color/colorWhite"
+            android:textSize="@dimen/settings_text_size"
+            android:textStyle="normal">
+
+            <RadioButton
+                android:id="@+id/radio_1k"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="onRadioButtonClicked"
+                android:text="1K" />
+
+            <RadioButton
+                android:id="@+id/radio_2k"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="onRadioButtonClicked"
+                android:text="2K" />
+
+            <RadioButton
+                android:id="@+id/radio_4k"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="onRadioButtonClicked"
+                android:text="4K" />
+        </RadioGroup>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Auto Upload"
+            android:textSize="@dimen/settings_text_size"
+            android:textColor="@color/colorWhite"
+            android:textStyle="normal"
+            android:id="@+id/auto_upload"/>
+        <Switch
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/auto_upload_setting"
+            android:padding="@dimen/settings_padding" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Image correction"
+            android:textSize="@dimen/settings_text_size"
+            android:textColor="@color/colorWhite"
+            android:textStyle="normal"
+            android:id="@+id/image_correction"/>
+        <Switch
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/image_correction_setting"
+            android:padding="@dimen/settings_padding"/>
+    </GridLayout>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="@dimen/settings_text_size"
+        android:textColor="@color/colorWhite"
+        android:textStyle="bold"
+        android:text="GIMBAL SETTINGS"
+        android:layout_marginTop="10dp"
+        android:layout_gravity="center" />
+    <TextView
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:textSize="15sp"
+        android:textColor="@color/colorWhite"
+        android:textStyle="normal"
+        android:text="Note: connecting a gimbal will override the camera settings above"
+        android:textAlignment="center"
+        android:layout_gravity="center"
+        android:padding="@dimen/settings_padding"/>
+    <GridLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/settings_box"
+        android:orientation="horizontal"
+        android:rowCount="1"
+        android:columnCount="2"
+        android:layout_gravity="center">
+        <TextView
+            android:id="@+id/gimbal_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="@dimen/settings_text_size"
+            android:textColor="@color/colorWhite"
+            android:textStyle="normal"
+            android:layout_gravity="center"
+            android:padding="@dimen/settings_padding"/>
+        <ImageView
+            android:id="@+id/gimbal_check"
+            android:layout_width="75dp"
+            android:layout_height="75dp"
+            app:srcCompat="@drawable/ic_checkmark_selector" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Search for gimbal"
+            android:textSize="@dimen/settings_text_size"
+            android:textColor="@color/colorWhite"
+            android:textStyle="normal"
+            android:padding="@dimen/settings_padding"
+            android:layout_gravity="center" />
+        <Button
+            android:id="@+id/gimbal_search"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Search"
+            android:padding="@dimen/settings_padding"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="grid rows "
+            android:textSize="@dimen/settings_text_size"
+            android:textColor="@color/colorWhite"
+            android:textStyle="normal"
+            android:padding="@dimen/settings_padding"
+            android:layout_gravity="center" />
+        <com.cepheuen.elegantnumberbutton.view.ElegantNumberButton
+            android:layout_width="@dimen/settings_elegant_width"
+            android:layout_height="wrap_content"
+            android:id="@+id/rows_count"
+            android:padding="@dimen/settings_padding"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="grid columns "
+            android:textSize="@dimen/settings_text_size"
+            android:textColor="@color/colorWhite"
+            android:textStyle="normal"
+            android:padding="@dimen/settings_padding"
+            android:layout_gravity="center" />
+        <com.cepheuen.elegantnumberbutton.view.ElegantNumberButton
+            android:layout_width="@dimen/settings_elegant_width"
+            android:layout_height="wrap_content"
+            android:id="@+id/columns_count"
+            android:padding="@dimen/settings_padding"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Horizontal angle"
+            android:textSize="@dimen/settings_text_size"
+            android:textColor="@color/colorWhite"
+            android:textStyle="normal"
+            android:padding="@dimen/settings_padding"
+            android:layout_gravity="center" />
+        <EditText
+            android:id="@+id/horizontal_angle_setting"
+            android:layout_width="@dimen/settings_input_width"
+            android:layout_height="wrap_content"
+            android:inputType="numberDecimal"
+            android:padding="@dimen/settings_padding"
+            android:layout_margin="10dp"
+            android:textAlignment="center"
+            android:textColor="@color/colorBlack"
+            android:textColorHint="@color/colorBlack"
+            android:imeOptions="actionDone"
+            android:background="#b3c6e7" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Vertical angle"
+            android:textSize="@dimen/settings_text_size"
+            android:textColor="@color/colorWhite"
+            android:textStyle="normal"
+            android:padding="@dimen/settings_padding"
+            android:layout_gravity="center" />
+        <EditText
+            android:id="@+id/vertical_angle_setting"
+            android:layout_width="@dimen/settings_input_width"
+            android:layout_height="wrap_content"
+            android:inputType="numberDecimal"
+            android:padding="@dimen/settings_padding"
+            android:layout_margin="10dp"
+            android:textAlignment="center"
+            android:textColor="@color/colorBlack"
+            android:textColorHint="@color/colorBlack"
+            android:imeOptions="actionDone"
+            android:background="#b3c6e7" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Pause buffer"
+            android:textSize="@dimen/settings_text_size"
+            android:textColor="@color/colorWhite"
+            android:textStyle="normal"
+            android:padding="@dimen/settings_padding"
+            android:layout_gravity="center" />
+        <EditText
+            android:id="@+id/pause_buffer"
+            android:layout_width="@dimen/settings_input_width"
+            android:layout_height="wrap_content"
+            android:inputType="numberDecimal"
+            android:padding="@dimen/settings_padding"
+            android:layout_margin="10dp"
+            android:textAlignment="center"
+            android:textColor="@color/colorBlack"
+            android:textColorHint="@color/colorBlack"
+            android:imeOptions="actionDone"
+            android:background="#b3c6e7" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Invert horizontal"
+            android:textSize="@dimen/settings_text_size"
+            android:padding="@dimen/settings_padding"
+            android:textColor="@color/colorWhite"
+            android:textStyle="normal"
+            android:layout_gravity="center"/>
+        <ToggleButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/horizontal_inversion"
+            android:padding="@dimen/settings_padding" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Invert vertical"
+            android:textSize="@dimen/settings_text_size"
+            android:padding="@dimen/settings_padding"
+            android:textColor="@color/colorWhite"
+            android:textStyle="normal"
+            android:layout_gravity="center"/>
+        <ToggleButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/vertical_inversion"
+            android:padding="@dimen/settings_padding" />
+    </GridLayout>
+
+</LinearLayout>
+</ScrollView>
