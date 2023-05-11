@@ -84,36 +84,59 @@ public class PrePostProcessor {
      Computes intersection-over-union overlap between two bounding boxes.
      */
     static float IOU(Rect a, Rect b) {
+        // Calculate the area of the first bounding box
         float areaA = (a.right - a.left) * (a.bottom - a.top);
+        // If the area is 0 or negative, the boxes do not overlap, so return 0.
         if (areaA <= 0.0) return 0.0f;
 
+        // Calculate the area of the second bounding box
         float areaB = (b.right - b.left) * (b.bottom - b.top);
+        // If the area is 0 or negative, the boxes do not overlap, so return 0.
         if (areaB <= 0.0) return 0.0f;
 
+        // Calculate the coordinates of the intersection rectangle
         float intersectionMinX = Math.max(a.left, b.left);
         float intersectionMinY = Math.max(a.top, b.top);
         float intersectionMaxX = Math.min(a.right, b.right);
         float intersectionMaxY = Math.min(a.bottom, b.bottom);
+
+        // Calculate the area of the intersection rectangle
         float intersectionArea = Math.max(intersectionMaxY - intersectionMinY, 0) *
                 Math.max(intersectionMaxX - intersectionMinX, 0);
+
+        // Calculate the union of the two boxes and return the IoU
         return intersectionArea / (areaA + areaB - intersectionArea);
     }
 
+/**
+ Converts model outputs to Non-Maximum Suppression (NMS) predictions. This is used by the weld detection
+ model and annotates bounding boxes with the classname: "weld"
+ @param outputs - Model outputs.
+ @param imgScaleX - Scaling factor for X dimension of the input image.
+ @param imgScaleY - Scaling factor for Y dimension of the input image.
+ @param ivScaleX - Scaling factor for X dimension of the ImageView.
+ @param ivScaleY - Scaling factor for Y dimension of the ImageView.
+ @param startX - Starting X position of the ImageView.
+ @param startY - Starting Y position of the ImageView.
+ @return ArrayList of NMS predictions.
+ **/
     public static ArrayList<Result> outputsToNMSPredictions(float[] outputs, float imgScaleX, float imgScaleY, float ivScaleX, float ivScaleY, float startX, float startY) {
         ArrayList<Result> results = new ArrayList<>();
         for (int i = 0; i< mOutputRow; i++) {
+            // Check if the confidence score for the predicted box is greater than the threshold
             if (outputs[i* mOutputColumn +4] > mThreshold) {
                 float x = outputs[i* mOutputColumn];
                 float y = outputs[i* mOutputColumn +1];
                 float w = outputs[i* mOutputColumn +2];
                 float h = outputs[i* mOutputColumn +3];
 
+                // Compute the bounding box coordinates in pixels
                 float left = imgScaleX * (x - w/2);
                 float top = imgScaleY * (y - h/2);
                 float right = imgScaleX * (x + w/2);
                 float bottom = imgScaleY * (y + h/2);
 
-                // Scale up the Rect by 10%
+                // Increase the size of the bounding box by 10%
                 float rectWidth = right - left;
                 float rectHeight = bottom - top;
                 float rectWidthIncrease = rectWidth * 0.1f;
@@ -123,6 +146,7 @@ public class PrePostProcessor {
                 right += rectWidthIncrease / 2f;
                 bottom += rectHeightIncrease / 2f;
 
+                // Get the predicted class for the box
                 float max = outputs[i* mOutputColumn +5];
                 int cls = 0;
                 for (int j = 0; j < mOutputColumn -5; j++) {
@@ -131,7 +155,7 @@ public class PrePostProcessor {
                         cls = j;
                     }
                 }
-
+                // Convert the bounding box coordinates to pixels and create a new Result object
                 Rect rect = new Rect((int)(startX+ivScaleX*left), (int)(startY+top*ivScaleY), (int)(startX+ivScaleX*right), (int)(startY+ivScaleY*bottom));
                 Result result = new Result(cls, outputs[i*mOutputColumn+4], rect);
                 results.add(result);

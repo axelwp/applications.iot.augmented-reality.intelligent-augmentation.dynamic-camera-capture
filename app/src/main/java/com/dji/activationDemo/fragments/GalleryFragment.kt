@@ -62,9 +62,8 @@ class GalleryFragment internal constructor() : Fragment() {
     /** AndroidX navigation arguments */
     private val args: GalleryFragmentArgs by navArgs()
 
-
+    // Declare private variables
     private lateinit var mediaList: MutableList<File>
-
     private var mBitmap: Bitmap? = null
     private var mBitmap2: Bitmap? = null
     private var mModule: Module? = null
@@ -88,25 +87,24 @@ class GalleryFragment internal constructor() : Fragment() {
     @SuppressLint("RestrictedApi")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         Log.e("onCreate was called", "true")
+
         // Mark this as a retain fragment, so the lifecycle does not get restarted on config change
         retainInstance = true
 
-
-
-        // initialize mediaList if it is null
-
-        //mediaList = mediaList ?: mutableListOf()
+        // Try to load the weld and anomaly detection models
+        // Load in the classnames from the .txt files contained in the same directory
         try {
-
+            //Load the weld detection model
             mModule = LiteModuleLoader.load(MainActivity.assetFilePath(ContextUtil.getApplicationContext(myContext), "best.torchscript.ptl"))
             val br = BufferedReader(InputStreamReader(myContext.getAssets().open("classes.txt")))
             val iterator = br.lineSequence().iterator()
-            //val classes: MutableList<String> = ArrayList()
             while (iterator.hasNext()) {
                 val line = iterator.next()
                 classes.add(line)
             }
+            //Load the anomaly detection model
             mModule2 = LiteModuleLoader.load(MainActivity.assetFilePath(ContextUtil.getApplicationContext(myContext), "maskInTrainLast.torchscript.ptl"))
             val br2 = BufferedReader(InputStreamReader(myContext.getAssets().open("classes_defect.txt")))
             val iterator2 = br2.lineSequence().iterator()
@@ -116,37 +114,49 @@ class GalleryFragment internal constructor() : Fragment() {
             }
             PrePostProcessor.mClasses = classes.toTypedArray()
         } catch (e: IOException) {
+            // Log an error message if something goes wrong while reading the assets
             Log.e("Object Detection", "Error reading assets", e)
         }
 
     }
     override fun onAttach(myContext: Context) {
         super.onAttach(myContext)
+        // Store a reference to the attached context
         this.myContext = myContext
     }
 
+    // A function that crops a rectangular region from a given bitmap and returns a new bitmap of the cropped region
     private fun cropImage(bitmap: Bitmap, rect: Rect): Bitmap {
+        // create a new bitmap with the dimensions of the rectangular region to be cropped
         val croppedBitmap = Bitmap.createBitmap(rect.width(), rect.height(), Bitmap.Config.ARGB_8888)
+
+        // create a canvas object with the new bitmap
         val canvas = Canvas(croppedBitmap)
+
+        // create source and destination rectangles for cropping
         val srcRect = Rect(rect.left, rect.top, rect.right, rect.bottom)
         val dstRect = Rect(0, 0, rect.width(), rect.height())
+
+        // draw the cropped region from the source bitmap to the new bitmap using the canvas
         canvas.drawBitmap(bitmap, srcRect, dstRect, null)
+
+        // return the cropped bitmap
         return croppedBitmap
     }
 
     private fun runImageDetection(index: Int, mModule: Module) {
         var results = ArrayList<Result>()
         var results2 = ArrayList<Result>()
-        val resultSet = ArrayList<Result>()
         var cropBox: Rect
+
+        //Multithreading was disabled at the last minute, this could probably be made to work
         //runBlocking {
             //launch(Dispatchers.Default) {
+                //Set the bitmap to be displayed to the current gallery index
                 mBitmap = BitmapFactory.decodeFile(mediaList[index].absolutePath)
-
 
                 //CREATE MATRIX OBJECT AND ROTATE BITMAP BY 90 DEGREES
                 val matrix = Matrix()
-                //matrix.postRotate(90.0f)
                 //CREATE A NEW BITMAP WITH SAME ASPECT RATIO AS ORIGINAL BITMAP, BUT WITH SMALLER SIZE
                 var bitmap = Bitmap.createBitmap(mBitmap!!, 0, 0, mBitmap!!.width, mBitmap!!.height, matrix, true)
                 val resizedBitmap = Bitmap.createScaledBitmap(bitmap, PrePostProcessor.mInputWidth, PrePostProcessor.mInputHeight, true)
@@ -173,25 +183,16 @@ class GalleryFragment internal constructor() : Fragment() {
                 val startX = 0.toFloat()
                 val startY = 0.toFloat()
 
-                val TAG: String = "Gallery: "
-                /*
-                Log.d(TAG, "imgscalex: ${imgScaleX}")
-                Log.d(TAG, "imgscaley: ${imgScaleY}")
-                Log.d(TAG, "ivscalex: ${ivScaleX}")
-                Log.d(TAG, "ivscaley: ${ivScaleY}")
-                Log.d(TAG, "startx: ${startX}")
-                Log.d(TAG, "starty: ${startY}")
-                */
-
                 //TAKE OUTPUTS AND PROCESS IT INTO PREDICTIONS
                 results = PrePostProcessor.outputsToNMSPredictions(outputs, imgScaleX, imgScaleY, ivScaleX, ivScaleY, startX, startY)
-                Log.d("result size", results.size.toString())
 
                 if(results.size >= 1){
                     //undo the operations within PrePostProcessor
                     var rHeight = results[0].rect.height()
                     var rWidth = results[0].rect.width()
 
+                    //enforce the crop region to be of aspect ratio 1:1 by getting the difference between the largest
+                    // and smallest dimension, then adding 1/2 the difference to each side of the rect to guaruntee a square
                     if(rHeight < rWidth){
                         rHeight = rWidth - rHeight
                         rHeight /= 2
@@ -201,10 +202,9 @@ class GalleryFragment internal constructor() : Fragment() {
                         rWidth /= 2
                         rHeight = 0
                     }
+                    // Crop the bitmap based on the rectangle coordinates
                     cropBox = Rect((((results[0].rect.left - rWidth - startX) / ivScaleX).toInt()), (((results[0].rect.top + rHeight - startY) / ivScaleY).toInt()), (((results[0].rect.right + rWidth - startX) / ivScaleX).toInt()), (((results[0].rect.bottom - rHeight - startY) / ivScaleY).toInt()))
 
-                    // Crop the bitmap based on the rectangle coordinates
-                    // Crop the bitmap based on the rectangle coordinates
 
                     //change the PrePostProcessor to the new class list
                     PrePostProcessor2.mClasses = classes2.toTypedArray()
@@ -217,16 +217,8 @@ class GalleryFragment internal constructor() : Fragment() {
                     val matrix2 = Matrix()
                     //matrix.postRotate(90.0f)
                     //CREATE A NEW BITMAP WITH SAME ASPECT RATIO AS ORIGINAL BITMAP, BUT WITH SMALLER SIZE
-                    //var bitmap2 = Bitmap.createBitmap(mBitmap2!!, 0, 0, mBitmap2!!.width, mBitmap2!!.height, matrix2, true)
-                    Log.d("rectangle height: ", results[0].rect.height().toString())
-                    Log.d("rectangle width: ", results[0].rect.width().toString())
-
-
 
                     val rBitmap2: Bitmap = cropImage(mBitmap!!, cropBox)
-                    Log.d("bitmap height: ", rBitmap2.height.toString())
-
-                    Log.d("bitmap width: ", rBitmap2.width.toString())
 
                     FileOutputStream(file).use { out ->
                         rBitmap2.compress(Bitmap.CompressFormat.JPEG, 100, out)
@@ -239,11 +231,14 @@ class GalleryFragment internal constructor() : Fragment() {
                     // Update the current item to display the new image
                     fragmentGalleryBinding.photoViewPager.setCurrentItem(index, false)
 
-
+                    //Scale the bitmap to 642 x 642 so it can be passed to the model
                     val resizedBitmap2 = Bitmap.createScaledBitmap(rBitmap2, PrePostProcessor2.mInputWidth, PrePostProcessor2.mInputHeight, true)
+
+                    //update the image view overlay to contain the newly cropped image
                     val imageView = view?.findViewById <ImageView>(R.id.croppedImage)
                     imageView!!.setImageBitmap(resizedBitmap2)
 
+                    //set the parameters for the anomaly display. these params affect imageView and resultView2
                     val params = imageView.layoutParams
                     params.width = resizedBitmap2.width
                     params.height = resizedBitmap2.height
@@ -251,8 +246,6 @@ class GalleryFragment internal constructor() : Fragment() {
 
                     mResultView2!!.layoutParams = params
 
-                    Log.d("ImageView height", params.height.toString())
-                    Log.d("ImageView width", params.width.toString())
                     //CONVERT BITMAP TO TENSOR
                     val inputTensor2 = TensorImageUtils.bitmapToFloat32Tensor(resizedBitmap2, PrePostProcessor2.NO_MEAN_RGB, PrePostProcessor2.NO_STD_RGB)
                     //RUN INPUT TENSOR THROUGH MODEL, RETURNS AS A TUPLE
@@ -275,64 +268,20 @@ class GalleryFragment internal constructor() : Fragment() {
                     val startX2 = 0.toFloat()
                     val startY2 = 0.toFloat()
 
-                    //val TAG2: String = "Gallery: "
-                    /*
-                    Log.d(TAG, "imgscalex: ${imgScaleX}")
-                    Log.d(TAG, "imgscaley: ${imgScaleY}")
-                    Log.d(TAG, "ivscalex: ${ivScaleX}")
-                    Log.d(TAG, "ivscaley: ${ivScaleY}")
-                    Log.d(TAG, "startx: ${startX}")
-                    Log.d(TAG, "starty: ${startY}")
-                    */
-                    Log.d("Weld location: ", results[0].rect.toString())
-
-                        //TAKE OUTPUTS AND PROCESS IT INTO PREDICTIONS
-                        results2 = PrePostProcessor2.outputsToNMSPredictions(outputs2, imgScaleX2, imgScaleY2, ivScaleX2, ivScaleY2, startX2, startY2)
-                        Log.d("anomalies found: ", results.size.toString())
-
-                        val cropBox = results[0].rect // the bounding box used to crop the original image
-                        val cropWidth = cropBox.width()
-                        val cropHeight = cropBox.height()
-
-                        val scaleX = mBitmap!!.width.toFloat() / PrePostProcessor2.mInputWidth
-                        val scaleY = mBitmap!!.height.toFloat() / PrePostProcessor2.mInputHeight
-
-                        //results2.forEach {
-                            //val rect = it.rect
-                            //Log.d("Before scaling: ", it.rect.toString())
-
-                            //var left = rect.left * imgScaleX2 * ivScaleX
-                            //var top = rect.top * imgScaleY2 * ivScaleY
-                            //var right = rect.right * imgScaleX2 * ivScaleX
-                            //var bottom = rect.bottom * imgScaleY2 * ivScaleY
-
-                            //var scaledBox = Rect(left.toInt(), top.toInt(), right.toInt(), bottom.toInt())
-                            //Log.d("After scaling: ", scaledBox.toString())
-                            //left = cropBox.left + (scaledBox.left.toFloat() * cropWidth / PrePostProcessor.mInputWidth)
-                            //right = cropBox.right + (scaledBox.right.toFloat() * cropWidth / PrePostProcessor.mInputWidth)
-                            //top = cropBox.top + (scaledBox.top.toFloat() * cropHeight / PrePostProcessor.mInputWidth)
-                            //bottom = cropBox.bottom + (scaledBox.bottom.toFloat() * cropHeight / PrePostProcessor.mInputWidth)
-                            //var transformedRect = Rect(left.toInt(), top.toInt(), right.toInt(), bottom.toInt())
-
-
-                            //val x = rect.left + cropBox.left
-                            //val y = rect.top + cropBox.top
-                            //val transformedRect = Rect(x, y, rect.right + cropBox.left, rect.bottom + cropBox.top)
-                            //Log.d("After transforming: ", transformedRect.toString())
-                            //it.rect = transformedRect
-                        //}
+                    //TAKE OUTPUTS AND PROCESS IT INTO PREDICTIONS
+                    results2 = PrePostProcessor2.outputsToNMSPredictions(outputs2, imgScaleX2, imgScaleY2, ivScaleX2, ivScaleY2, startX2, startY2)
+                    Log.d("anomalies found: ", results.size.toString())
                 //}
             //}
         }
 
-
+        //sets the welds and anomalies to be displayed and tells ResultView to reload
         mResultView2!!.setResults(results2)
         mResultView2!!.invalidate()
 
         mResultView!!.setResults(results)
         mResultView!!.invalidate()
 
-        //mResultView = mResultView2
     }
 
     override fun onCreateView(
@@ -351,6 +300,8 @@ class GalleryFragment internal constructor() : Fragment() {
 
         mResultView2 = view?.findViewById(R.id.resultView2)
         mButtonDetect = view.findViewById(R.id.detectButton)
+
+        //If the user presses the detect button, run the image detection function on the image contained in the current index
         mButtonDetect?.setOnClickListener {
             runImageDetection(index, mModule!!)
         }
@@ -363,11 +314,10 @@ class GalleryFragment internal constructor() : Fragment() {
             EXTENSION_WHITELIST.contains(file.extension.toUpperCase(Locale.ROOT))
         }?.sortedDescending()?.toMutableList() ?: mutableListOf()
 
-
+        //Log the paths of the photos contained in mediaList
         for (file in mediaList) {
             Log.d("GalleryFragment", file.absolutePath)
         }
-        //mediaList = mediaList ?: mutableListOf()
 
         //Checking media files list
         if (mediaList.isEmpty()) {
@@ -388,6 +338,7 @@ class GalleryFragment internal constructor() : Fragment() {
         }
 
         fragmentGalleryBinding.photoViewPager.addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
+            //When the page is scrolled (swiped), clear the ResultViews and tell them to reload
             override fun onPageScrolled(
                 position: Int,
                 positionOffset: Float,
@@ -401,17 +352,16 @@ class GalleryFragment internal constructor() : Fragment() {
             }
 
             override fun onPageSelected(position: Int) {
-                val total = mediaList.size
-                index = position
-                val photo = position + 1
-                fragmentGalleryBinding.photoCountText.text = "$photo OF $total"
+                val total = mediaList.size  // Total number of media items
+                index = position    // Update the current position/index
+                val photo = position + 1    // Current photo number (1-based indexing)
+
+                fragmentGalleryBinding.photoCountText.text = "$photo OF $total"    // Set the text to display the current photo count
+
                 val bitMapOption = BitmapFactory.Options()
-                bitMapOption.inJustDecodeBounds = true
-                BitmapFactory.decodeFile(mediaList[position].absolutePath, bitMapOption)
-                fragmentGalleryBinding.photoProperties.text = bitMapOption.outWidth.toString() + " x " + bitMapOption.outHeight.toString()
-
-
-
+                bitMapOption.inJustDecodeBounds = true  // Set the inJustDecodeBounds property to true to retrieve the image dimensions without loading the full bitmap
+                BitmapFactory.decodeFile(mediaList[position].absolutePath, bitMapOption)    // Decode the file path to get the image dimensions
+                fragmentGalleryBinding.photoProperties.text = bitMapOption.outWidth.toString() + " x " + bitMapOption.outHeight.toString()  // Set the text to display the image dimensions
             }
 
             override fun onPageScrollStateChanged(state: Int) {
@@ -455,9 +405,7 @@ class GalleryFragment internal constructor() : Fragment() {
                             if (mediaList.isEmpty()) {
                                 Navigation.findNavController(requireActivity(), R.id.fragment_container).navigateUp()
                             }
-
                         }
-
                         .setNegativeButton(android.R.string.no, null)
                         .create().showImmersive()
             }
@@ -473,11 +421,6 @@ class GalleryFragment internal constructor() : Fragment() {
         else {
             fragmentGalleryBinding.photoCountText.text = ""
         }
-
-    }
-
-    fun performAnomalyDetection() {
-
     }
 
     /** Deletes all the photos */
