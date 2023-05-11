@@ -5,7 +5,12 @@ Welcome to our Weld Inspection Android Application. This application provides a 
 
 ## Installation
 
-Clone the repository, open it in Android Studio and connect an Android device via USB or Bluetooth in order to build the code.
+1. Acquire Android Device (We use an Android Galaxy S21 provided by Intel)
+2. Download Android Studio (ver. 13 or higher)
+3. Clone repository to your local device
+4. Open repository through Android Studio
+5. Connect device via bluetooth or USB
+6. Build project to the target device, which will subsequently install it to the device
 
 ## Usage
 
