@@ -747,9 +747,8 @@ private fun imgToBitmap(image: Image): Bitmap? {
                 image.close()
                 return
             }
-
             var results = ArrayList<Result>()
-
+            //set up multithreading
             runBlocking {
                 launch(Dispatchers.Default) {
                     //CONVERT IMAGE TO BITMAP
@@ -759,7 +758,6 @@ private fun imgToBitmap(image: Image): Bitmap? {
                     //CREATE A NEW BITMAP WITH SAME ASPECT RATIO AS ORIGINAL BITMAP, BUT WITH SMALLER SIZE
                     bitmap = Bitmap.createBitmap(bitmap!!, 0, 0, bitmap!!.width, bitmap!!.height, matrix, true)
                     val resizedBitmap = Bitmap.createScaledBitmap(bitmap, PrePostProcessor.mInputWidth, PrePostProcessor.mInputHeight, true)
-
                     //CONVERT BITMAP TO TENSOR
                     val inputTensor = TensorImageUtils.bitmapToFloat32Tensor(resizedBitmap, PrePostProcessor.NO_MEAN_RGB, PrePostProcessor.NO_STD_RGB)
                     //RUN INPUT TENSOR THROUGH MODEL, RETURNS AS A TUPLE
@@ -768,7 +766,6 @@ private fun imgToBitmap(image: Image): Bitmap? {
                     val outputTensor = outputTuple[0].toTensor()
                     //CONVERT TO ARRAY OF FLOAT VALUES, THIS HOLDS THE OUTPUT OF TH EMODEL FOR THE INPUT IMAGE
                     val outputs = outputTensor.dataAsFloatArray
-
                     //CALCULATE SCALING FACTORS FOR IMAGE AND RESULTVIEW SO WE CAN CORRECTLY DISPLAY THE OBJECT DETECTION RESULT
                     //SCALE FACTOR FOR IMAGE WIDTH
                     val imgScaleX = bitmap.width.toFloat() / PrePostProcessor.mInputWidth
@@ -781,14 +778,12 @@ private fun imgToBitmap(image: Image): Bitmap? {
                     //SET STARTING COORDINATES FOR RESULTVIEW
                     val startX = 0.toFloat()
                     val startY = 0.toFloat()
-
                     //TAKE OUTPUTS AND PROCESS IT INTO PREDICTIONS
                     results = PrePostProcessor.outputsToNMSPredictions(outputs, imgScaleX, imgScaleY, ivScaleX, ivScaleY, startX, startY)
                 }
             }
             // Call all listeners with new value
              listeners.forEach { it(results) }
-
             image.close()
         }
     }

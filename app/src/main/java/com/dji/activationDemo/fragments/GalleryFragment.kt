@@ -149,130 +149,125 @@ class GalleryFragment internal constructor() : Fragment() {
         var results2 = ArrayList<Result>()
         var cropBox: Rect
 
-        //Multithreading was disabled at the last minute, this could probably be made to work
-        //runBlocking {
-            //launch(Dispatchers.Default) {
-                //Set the bitmap to be displayed to the current gallery index
-                mBitmap = BitmapFactory.decodeFile(mediaList[index].absolutePath)
+        //Set the bitmap to be displayed to the current gallery index
+        mBitmap = BitmapFactory.decodeFile(mediaList[index].absolutePath)
 
-                //CREATE MATRIX OBJECT AND ROTATE BITMAP BY 90 DEGREES
-                val matrix = Matrix()
-                //CREATE A NEW BITMAP WITH SAME ASPECT RATIO AS ORIGINAL BITMAP, BUT WITH SMALLER SIZE
-                var bitmap = Bitmap.createBitmap(mBitmap!!, 0, 0, mBitmap!!.width, mBitmap!!.height, matrix, true)
-                val resizedBitmap = Bitmap.createScaledBitmap(bitmap, PrePostProcessor.mInputWidth, PrePostProcessor.mInputHeight, true)
+        //CREATE MATRIX OBJECT AND ROTATE BITMAP BY 90 DEGREES
+        val matrix = Matrix()
+        //CREATE A NEW BITMAP WITH SAME ASPECT RATIO AS ORIGINAL BITMAP, BUT WITH SMALLER SIZE
+        var bitmap = Bitmap.createBitmap(mBitmap!!, 0, 0, mBitmap!!.width, mBitmap!!.height, matrix, true)
+        val resizedBitmap = Bitmap.createScaledBitmap(bitmap, PrePostProcessor.mInputWidth, PrePostProcessor.mInputHeight, true)
 
-                //CONVERT BITMAP TO TENSOR
-                val inputTensor = TensorImageUtils.bitmapToFloat32Tensor(resizedBitmap, PrePostProcessor.NO_MEAN_RGB, PrePostProcessor.NO_STD_RGB)
-                //RUN INPUT TENSOR THROUGH MODEL, RETURNS AS A TUPLE
-                val outputTuple: Array<IValue> = mModule?.forward(IValue.from(inputTensor))!!.toTuple()
-                //EXTRACTS FIRST ELEMENT FROM THE OUTPUT TUPLE
-                val outputTensor = outputTuple[0].toTensor()
-                //CONVERT TO ARRAY OF FLOAT VALUES, THIS HOLDS THE OUTPUT OF TH EMODEL FOR THE INPUT IMAGE
-                val outputs = outputTensor.dataAsFloatArray
+        //CONVERT BITMAP TO TENSOR
+        val inputTensor = TensorImageUtils.bitmapToFloat32Tensor(resizedBitmap, PrePostProcessor.NO_MEAN_RGB, PrePostProcessor.NO_STD_RGB)
+        //RUN INPUT TENSOR THROUGH MODEL, RETURNS AS A TUPLE
+        val outputTuple: Array<IValue> = mModule?.forward(IValue.from(inputTensor))!!.toTuple()
+        //EXTRACTS FIRST ELEMENT FROM THE OUTPUT TUPLE
+        val outputTensor = outputTuple[0].toTensor()
+        //CONVERT TO ARRAY OF FLOAT VALUES, THIS HOLDS THE OUTPUT OF TH EMODEL FOR THE INPUT IMAGE
+        val outputs = outputTensor.dataAsFloatArray
 
-                //CALCULATE SCALING FACTORS FOR IMAGE AND RESULTVIEW SO WE CAN CORRECTLY DISPLAY THE OBJECT DETECTION RESULT
-                //SCALE FACTOR FOR IMAGE WIDTH
-                val imgScaleX = bitmap.width.toFloat() / PrePostProcessor.mInputWidth
-                //SCALE FACTOR FOR IMAGE HEIGHT
-                val imgScaleY = bitmap.height.toFloat() / PrePostProcessor.mInputHeight
-                //SCALE FACTOR FOR RESULTVIEW WIDTH
-                val ivScaleX = mResultView!!.width.toFloat() / bitmap.width
-                //SCALE FACTOR FOR RESULTVIEW HEIGHT
-                val ivScaleY = mResultView!!.height.toFloat() / bitmap.height
-                //SET STARTING COORDINATES FOR RESULTVIEW
-                val startX = 0.toFloat()
-                val startY = 0.toFloat()
+        //CALCULATE SCALING FACTORS FOR IMAGE AND RESULTVIEW SO WE CAN CORRECTLY DISPLAY THE OBJECT DETECTION RESULT
+        //SCALE FACTOR FOR IMAGE WIDTH
+        val imgScaleX = bitmap.width.toFloat() / PrePostProcessor.mInputWidth
+        //SCALE FACTOR FOR IMAGE HEIGHT
+        val imgScaleY = bitmap.height.toFloat() / PrePostProcessor.mInputHeight
+        //SCALE FACTOR FOR RESULTVIEW WIDTH
+        val ivScaleX = mResultView!!.width.toFloat() / bitmap.width
+        //SCALE FACTOR FOR RESULTVIEW HEIGHT
+        val ivScaleY = mResultView!!.height.toFloat() / bitmap.height
+        //SET STARTING COORDINATES FOR RESULTVIEW
+        val startX = 0.toFloat()
+        val startY = 0.toFloat()
 
-                //TAKE OUTPUTS AND PROCESS IT INTO PREDICTIONS
-                results = PrePostProcessor.outputsToNMSPredictions(outputs, imgScaleX, imgScaleY, ivScaleX, ivScaleY, startX, startY)
+        //TAKE OUTPUTS AND PROCESS IT INTO PREDICTIONS
+        results = PrePostProcessor.outputsToNMSPredictions(outputs, imgScaleX, imgScaleY, ivScaleX, ivScaleY, startX, startY)
 
-                if(results.size >= 1){
-                    //undo the operations within PrePostProcessor
-                    var rHeight = results[0].rect.height()
-                    var rWidth = results[0].rect.width()
+        if(results.size >= 1){
+            //undo the operations within PrePostProcessor
+            var rHeight = results[0].rect.height()
+            var rWidth = results[0].rect.width()
 
-                    //enforce the crop region to be of aspect ratio 1:1 by getting the difference between the largest
-                    // and smallest dimension, then adding 1/2 the difference to each side of the rect to guaruntee a square
-                    if(rHeight < rWidth){
-                        rHeight = rWidth - rHeight
-                        rHeight /= 2
-                        rWidth = 0
-                    } else {
-                        rWidth = rHeight - rWidth
-                        rWidth /= 2
-                        rHeight = 0
-                    }
-                    // Crop the bitmap based on the rectangle coordinates
-                    cropBox = Rect((((results[0].rect.left - rWidth - startX) / ivScaleX).toInt()), (((results[0].rect.top + rHeight - startY) / ivScaleY).toInt()), (((results[0].rect.right + rWidth - startX) / ivScaleX).toInt()), (((results[0].rect.bottom - rHeight - startY) / ivScaleY).toInt()))
+            //enforce the crop region to be of aspect ratio 1:1 by getting the difference between the largest
+            // and smallest dimension, then adding 1/2 the difference to each side of the rect to guaruntee a square
+            if(rHeight < rWidth){
+                rHeight = rWidth - rHeight
+                rHeight /= 2
+                rWidth = 0
+            } else {
+                rWidth = rHeight - rWidth
+                rWidth /= 2
+                rHeight = 0
+            }
+            // Crop the bitmap based on the rectangle coordinates
+            cropBox = Rect((((results[0].rect.left - rWidth - startX) / ivScaleX).toInt()), (((results[0].rect.top + rHeight - startY) / ivScaleY).toInt()), (((results[0].rect.right + rWidth - startX) / ivScaleX).toInt()), (((results[0].rect.bottom - rHeight - startY) / ivScaleY).toInt()))
 
 
-                    //change the PrePostProcessor to the new class list
-                    PrePostProcessor2.mClasses = classes2.toTypedArray()
+            //change the PrePostProcessor to the new class list
+            PrePostProcessor2.mClasses = classes2.toTypedArray()
 
-                    mBitmap2 = BitmapFactory.decodeFile(mediaList[index].absolutePath)
-                    val file = File(mediaList[index].absolutePath)
+            mBitmap2 = BitmapFactory.decodeFile(mediaList[index].absolutePath)
+            val file = File(mediaList[index].absolutePath)
 
 
-                    //CREATE MATRIX OBJECT AND ROTATE BITMAP BY 90 DEGREES
-                    val matrix2 = Matrix()
-                    //matrix.postRotate(90.0f)
-                    //CREATE A NEW BITMAP WITH SAME ASPECT RATIO AS ORIGINAL BITMAP, BUT WITH SMALLER SIZE
+            //CREATE MATRIX OBJECT AND ROTATE BITMAP BY 90 DEGREES
+            val matrix2 = Matrix()
+            //matrix.postRotate(90.0f)
+            //CREATE A NEW BITMAP WITH SAME ASPECT RATIO AS ORIGINAL BITMAP, BUT WITH SMALLER SIZE
 
-                    val rBitmap2: Bitmap = cropImage(mBitmap!!, cropBox)
+            val rBitmap2: Bitmap = cropImage(mBitmap!!, cropBox)
 
-                    FileOutputStream(file).use { out ->
-                        rBitmap2.compress(Bitmap.CompressFormat.JPEG, 100, out)
-                    }
-                    val adapter = fragmentGalleryBinding.photoViewPager.adapter as? MediaPagerAdapter
+            FileOutputStream(file).use { out ->
+                rBitmap2.compress(Bitmap.CompressFormat.JPEG, 100, out)
+            }
+            val adapter = fragmentGalleryBinding.photoViewPager.adapter as? MediaPagerAdapter
 
-                    // Notify the adapter that the data set has changed
-                    adapter!!.notifyDataSetChanged()
+            // Notify the adapter that the data set has changed
+            adapter!!.notifyDataSetChanged()
 
-                    // Update the current item to display the new image
-                    fragmentGalleryBinding.photoViewPager.setCurrentItem(index, false)
+            // Update the current item to display the new image
+            fragmentGalleryBinding.photoViewPager.setCurrentItem(index, false)
 
-                    //Scale the bitmap to 642 x 642 so it can be passed to the model
-                    val resizedBitmap2 = Bitmap.createScaledBitmap(rBitmap2, PrePostProcessor2.mInputWidth, PrePostProcessor2.mInputHeight, true)
+            //Scale the bitmap to 642 x 642 so it can be passed to the model
+            val resizedBitmap2 = Bitmap.createScaledBitmap(rBitmap2, PrePostProcessor2.mInputWidth, PrePostProcessor2.mInputHeight, true)
 
-                    //update the image view overlay to contain the newly cropped image
-                    val imageView = view?.findViewById <ImageView>(R.id.croppedImage)
-                    imageView!!.setImageBitmap(resizedBitmap2)
+            //update the image view overlay to contain the newly cropped image
+            val imageView = view?.findViewById <ImageView>(R.id.croppedImage)
+            imageView!!.setImageBitmap(resizedBitmap2)
 
-                    //set the parameters for the anomaly display. these params affect imageView and resultView2
-                    val params = imageView.layoutParams
-                    params.width = resizedBitmap2.width
-                    params.height = resizedBitmap2.height
-                    imageView.layoutParams = params
+            //set the parameters for the anomaly display. these params affect imageView and resultView2
+            val params = imageView.layoutParams
+            params.width = resizedBitmap2.width
+            params.height = resizedBitmap2.height
+            imageView.layoutParams = params
 
-                    mResultView2!!.layoutParams = params
+            mResultView2!!.layoutParams = params
 
-                    //CONVERT BITMAP TO TENSOR
-                    val inputTensor2 = TensorImageUtils.bitmapToFloat32Tensor(resizedBitmap2, PrePostProcessor2.NO_MEAN_RGB, PrePostProcessor2.NO_STD_RGB)
-                    //RUN INPUT TENSOR THROUGH MODEL, RETURNS AS A TUPLE
-                    val outputTuple2: Array<IValue> = mModule2?.forward(IValue.from(inputTensor2))!!.toTuple()
-                    //EXTRACTS FIRST ELEMENT FROM THE OUTPUT TUPLE
-                    val outputTensor2 = outputTuple2[0].toTensor()
-                    //CONVERT TO ARRAY OF FLOAT VALUES, THIS HOLDS THE OUTPUT OF TH EMODEL FOR THE INPUT IMAGE
-                    val outputs2 = outputTensor2.dataAsFloatArray
+            //CONVERT BITMAP TO TENSOR
+            val inputTensor2 = TensorImageUtils.bitmapToFloat32Tensor(resizedBitmap2, PrePostProcessor2.NO_MEAN_RGB, PrePostProcessor2.NO_STD_RGB)
+            //RUN INPUT TENSOR THROUGH MODEL, RETURNS AS A TUPLE
+            val outputTuple2: Array<IValue> = mModule2?.forward(IValue.from(inputTensor2))!!.toTuple()
+            //EXTRACTS FIRST ELEMENT FROM THE OUTPUT TUPLE
+            val outputTensor2 = outputTuple2[0].toTensor()
+            //CONVERT TO ARRAY OF FLOAT VALUES, THIS HOLDS THE OUTPUT OF TH EMODEL FOR THE INPUT IMAGE
+            val outputs2 = outputTensor2.dataAsFloatArray
 
-                    //CALCULATE SCALING FACTORS FOR IMAGE AND RESULTVIEW SO WE CAN CORRECTLY DISPLAY THE OBJECT DETECTION RESULT
-                    //SCALE FACTOR FOR IMAGE WIDTH
-                    val imgScaleX2 = rBitmap2.width.toFloat() / PrePostProcessor2.mInputWidth
-                    //SCALE FACTOR FOR IMAGE HEIGHT
-                    val imgScaleY2 = rBitmap2.height.toFloat() / PrePostProcessor2.mInputHeight
-                    //SCALE FACTOR FOR RESULTVIEW WIDTH
-                    val ivScaleX2 = mResultView2!!.width.toFloat() / rBitmap2.width
-                    //SCALE FACTOR FOR RESULTVIEW HEIGHT
-                    val ivScaleY2 = mResultView2!!.height.toFloat() / rBitmap2.height
-                    //SET STARTING COORDINATES FOR RESULTVIEW
-                    val startX2 = 0.toFloat()
-                    val startY2 = 0.toFloat()
+            //CALCULATE SCALING FACTORS FOR IMAGE AND RESULTVIEW SO WE CAN CORRECTLY DISPLAY THE OBJECT DETECTION RESULT
+            //SCALE FACTOR FOR IMAGE WIDTH
+            val imgScaleX2 = rBitmap2.width.toFloat() / PrePostProcessor2.mInputWidth
+            //SCALE FACTOR FOR IMAGE HEIGHT
+            val imgScaleY2 = rBitmap2.height.toFloat() / PrePostProcessor2.mInputHeight
+            //SCALE FACTOR FOR RESULTVIEW WIDTH
+            val ivScaleX2 = mResultView2!!.width.toFloat() / rBitmap2.width
+            //SCALE FACTOR FOR RESULTVIEW HEIGHT
+            val ivScaleY2 = mResultView2!!.height.toFloat() / rBitmap2.height
+            //SET STARTING COORDINATES FOR RESULTVIEW
+            val startX2 = 0.toFloat()
+            val startY2 = 0.toFloat()
 
-                    //TAKE OUTPUTS AND PROCESS IT INTO PREDICTIONS
-                    results2 = PrePostProcessor2.outputsToNMSPredictions(outputs2, imgScaleX2, imgScaleY2, ivScaleX2, ivScaleY2, startX2, startY2)
-                    Log.d("anomalies found: ", results.size.toString())
-                //}
-            //}
+            //TAKE OUTPUTS AND PROCESS IT INTO PREDICTIONS
+            results2 = PrePostProcessor2.outputsToNMSPredictions(outputs2, imgScaleX2, imgScaleY2, ivScaleX2, ivScaleY2, startX2, startY2)
+            Log.d("anomalies found: ", results.size.toString())
         }
 
         //sets the welds and anomalies to be displayed and tells ResultView to reload
