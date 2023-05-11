@@ -200,15 +200,16 @@ class GalleryFragment internal constructor() : Fragment() {
                 rHeight = 0
             }
             // Crop the bitmap based on the rectangle coordinates
-            cropBox = Rect((((results[0].rect.left - rWidth - startX) / ivScaleX).toInt()), (((results[0].rect.top + rHeight - startY) / ivScaleY).toInt()), (((results[0].rect.right + rWidth - startX) / ivScaleX).toInt()), (((results[0].rect.bottom - rHeight - startY) / ivScaleY).toInt()))
-
+            cropBox = Rect((((results[0].rect.left - rWidth - startX) / ivScaleX).toInt()), 
+                           (((results[0].rect.top + rHeight - startY) / ivScaleY).toInt()), 
+                           (((results[0].rect.right + rWidth - startX) / ivScaleX).toInt()), 
+                           (((results[0].rect.bottom - rHeight - startY) / ivScaleY).toInt()))
 
             //change the PrePostProcessor to the new class list
             PrePostProcessor2.mClasses = classes2.toTypedArray()
 
             mBitmap2 = BitmapFactory.decodeFile(mediaList[index].absolutePath)
             val file = File(mediaList[index].absolutePath)
-
 
             //CREATE MATRIX OBJECT AND ROTATE BITMAP BY 90 DEGREES
             val matrix2 = Matrix()
