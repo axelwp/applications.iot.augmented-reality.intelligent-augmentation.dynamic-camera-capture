@@ -189,7 +189,7 @@ class GalleryFragment internal constructor() : Fragment() {
             var rWidth = results[0].rect.width()
 
             //enforce the crop region to be of aspect ratio 1:1 by getting the difference between the largest
-            // and smallest dimension, then adding 1/2 the difference to each side of the rect to guaruntee a square
+            // and smallest dimension, then adding 1/2 the difference to each side of the rect to guarantee a square
             if(rHeight < rWidth){
                 rHeight = rWidth - rHeight
                 rHeight /= 2
@@ -200,10 +200,25 @@ class GalleryFragment internal constructor() : Fragment() {
                 rHeight = 0
             }
             // Crop the bitmap based on the rectangle coordinates
-            cropBox = Rect((((results[0].rect.left - rWidth - startX) / ivScaleX).toInt()), 
-                           (((results[0].rect.top + rHeight - startY) / ivScaleY).toInt()), 
-                           (((results[0].rect.right + rWidth - startX) / ivScaleX).toInt()), 
-                           (((results[0].rect.bottom - rHeight - startY) / ivScaleY).toInt()))
+            cropBox = Rect((((results[0].rect.left - rWidth - startX) / ivScaleX).toInt()),
+                (((results[0].rect.top + rHeight - startY) / ivScaleY).toInt()),
+                (((results[0].rect.right + rWidth - startX) / ivScaleX).toInt()),
+                (((results[0].rect.bottom - rHeight - startY) / ivScaleY).toInt()))
+
+            // Calculate the boundaries of the mResultView
+            val x1 = 0
+            val y1 = 0
+            val x2 = mResultView!!.width
+            val y2 = mResultView!!.height
+
+            // Adjust the coordinates of the cropBox
+            val adjustedLeft = cropBox.left.coerceIn(x1, x2)
+            val adjustedTop = cropBox.top.coerceIn(y1, y2)
+            val adjustedRight = cropBox.right.coerceIn(x1, x2)
+            val adjustedBottom = cropBox.bottom.coerceIn(y1, y2)
+
+            // Create the adjusted cropBox
+            val adjustedCropBox = Rect(adjustedLeft, adjustedTop, adjustedRight, adjustedBottom)
 
             //change the PrePostProcessor to the new class list
             PrePostProcessor2.mClasses = classes2.toTypedArray()
@@ -215,8 +230,13 @@ class GalleryFragment internal constructor() : Fragment() {
             val matrix2 = Matrix()
             //matrix.postRotate(90.0f)
             //CREATE A NEW BITMAP WITH SAME ASPECT RATIO AS ORIGINAL BITMAP, BUT WITH SMALLER SIZE
+            //If one of the crop dimensions is 0, then feed the full original image into the anomaly detection model
+            var rBitmap2: Bitmap = if(adjustedCropBox.width() > 0 && adjustedCropBox.height() > 0) {
+                cropImage(mBitmap!!, adjustedCropBox)
+            } else {
+                mBitmap!!
+            }
 
-            val rBitmap2: Bitmap = cropImage(mBitmap!!, cropBox)
 
             FileOutputStream(file).use { out ->
                 rBitmap2.compress(Bitmap.CompressFormat.JPEG, 100, out)
@@ -229,7 +249,7 @@ class GalleryFragment internal constructor() : Fragment() {
             // Update the current item to display the new image
             fragmentGalleryBinding.photoViewPager.setCurrentItem(index, false)
 
-            //Scale the bitmap to 642 x 642 so it can be passed to the model
+            //Scale the bitmap to 640 x 640 so it can be passed to the model
             val resizedBitmap2 = Bitmap.createScaledBitmap(rBitmap2, PrePostProcessor2.mInputWidth, PrePostProcessor2.mInputHeight, true)
 
             //update the image view overlay to contain the newly cropped image
