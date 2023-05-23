@@ -5,7 +5,7 @@ Welcome to our Weld Inspection Android Application. This application provides a 
 
 ## Architecture Diagram
 
-![image](https://github.com/axelwp/applications.iot.augmented-reality.intelligent-augmentation.dynamic-camera-capture/assets/59634858/e331522e-bbdd-4de0-8bc4-d859184475ef)
+![image](https://github.com/axelwp/applications.iot.augmented-reality.intelligent-augmentation.dynamic-camera-capture/assets/59634858/114158bd-e00f-4490-b639-1e339d3e56ea)
 
 
 ## Installation
